@@ -38,9 +38,11 @@ class PerPool {
   constructor() {
     this.params = {
       live: {
-        tracker: () => {},
-        click: () => {},
-        scroll: () => {},
+        mouseTracker: {
+          mouseMovement: null,
+          mouseScroll: null,
+          mouseClick: null,
+        },
       },
       start: () => {},
       done: () => {},
@@ -56,9 +58,11 @@ class PerPool {
 
       files: [],
       live: {
-        tracker: [],
-        click: [],
-        scroll: [],
+        mouseTracker: {
+          mouseMovement: [],
+          mouseScroll: [],
+          mouseClick: [],
+        },
       },
       session: {
         startTime: null,
@@ -77,9 +81,11 @@ class PerPool {
   start(params) {
     this.params = {
       live: {
-        tracker: () => {},
-        click: () => {},
-        scroll: () => {},
+        mouseTracker: {
+          mouseMovement: () => {},
+          mouseScroll: () => {},
+          mouseClick: () => {},
+        },
       },
       start: () => {},
       done: () => {},
@@ -149,6 +155,15 @@ class PerPool {
     });
   }
 
+  mouseMoveListener() {
+    document.addEventListener("mousemove", (event) => {
+      this.pool.live.mouseTracker.mouseMovement.push({
+        mouseX: event.pageX,
+        mouseY: event.pageY,
+      });
+    });
+  }
+
   clickListener() {
     document.addEventListener("click", (event) =>
       rasterizeHTML
@@ -157,7 +172,7 @@ class PerPool {
           document.createElement("canvas")
         )
         .then((result) => {
-          this.pool.live.click.push({
+          this.pool.live.mouseTracker.mouseClick.push({
             type: event.target.nodeName,
             image: {
               source: btoa(unescape(encodeURIComponent(result.svg))),
@@ -172,7 +187,7 @@ class PerPool {
             },
             timeStamp: event.timeStamp,
           });
-          this.params.live.click({
+          this.params.live.mouseTracker.mouseClick({
             type: event.target.nodeName,
             mouse: {
               x: event.pageX,
@@ -186,14 +201,14 @@ class PerPool {
 
   scrollListener() {
     document.addEventListener("scroll", (event) => {
-      this.pool.live.scroll.push({
+      this.pool.live.mouseTracker.mouseScroll.push({
         position: {
           x: window.scrollX,
           y: window.scrollY,
         },
         timeStamp: event.timeStamp,
       });
-      this.params.live.scroll({
+      this.params.live.mouseTracker.mouseScroll({
         position: {
           x: window.scrollX,
           y: window.scrollY,
@@ -203,25 +218,25 @@ class PerPool {
     });
   }
 
-  trackerListener() {
-    document
-      .querySelector("[data-tracker]")
-      .addEventListener("click", (event) => {
-        delete event.target.dataset.tracker;
-        this.pool.live.tracker.push({
-          data: event.target.dataset,
-          timeStamp: event.timeStamp,
-        });
-        this.pool.live.tracker.push({
-          data: event.target.dataset,
-          timeStamp: event.timeStamp,
-        });
-        this.params.live.tracker({
-          data: event.target.dataset,
-          timeStamp: event.timeStamp,
-        });
-      });
-  }
+  // trackerListener() {
+  //   document
+  //     .querySelector("[data-tracker]")
+  //     .addEventListener("click", (event) => {
+  //       delete event.target.dataset.tracker;
+  //       this.pool.live.tracker.push({
+  //         data: event.target.dataset,
+  //         timeStamp: event.timeStamp,
+  //       });
+  //       this.pool.live.tracker.push({
+  //         data: event.target.dataset,
+  //         timeStamp: event.timeStamp,
+  //       });
+  //       this.params.live.tracker({
+  //         data: event.target.dataset,
+  //         timeStamp: event.timeStamp,
+  //       });
+  //     });
+  // }
 
   detectNetwork() {
     DetectRTC.DetectLocalIPAddress((ipAddress, isPublic, isIpv4) => {
@@ -259,9 +274,10 @@ class PerPool {
     this.calculateWindowLoad();
     this.fetchStartTime();
     this.fetchFileDetails();
+    this.mouseMoveListener();
     this.clickListener();
     this.scrollListener();
-    this.trackerListener();
+    // this.trackerListener();
     this.detectNetwork();
     this.params.done(this.pool);
 
@@ -276,19 +292,23 @@ PerPoolListener.listener("load", function () {
     monitor: true,
     tracker: true,
     live: {
-      tracker: (Tracker) => console.log("Tracker : ", Tracker),
-      click: (Click) => console.log("Clicked : ", Click),
-      scroll: (Scroll) => {
-        let FMdata = new FormData();
-        FMdata.append("note", JSON.stringify(Scroll));
-        const options = {
-          method: "POST",
-          body: FMdata,
-        };
-        fetch(
-          "https://vobo.cloud/api/v1/insert/multiple/8538-39039-7253-40668/527-9237-2216-5378/9313-2864-8424-8557?language=tr",
-          options
-        );
+      mouseTracker: {
+        mouseMovement: (MouseMove) => console.log(MouseMove),
+        // tracker: (Tracker) => console.log("Tracker : ", Tracker),
+        mouseClick: (Click) => console.log("Clicked : ", Click),
+        mouseScroll: (Scroll) => {
+          console.log(PerPoolListener);
+          let FMdata = new FormData();
+          FMdata.append("note", JSON.stringify(Scroll));
+          const options = {
+            method: "POST",
+            body: FMdata,
+          };
+          fetch(
+            "https://vobo.cloud/api/v1/insert/multiple/8538-39039-7253-40668/527-9237-2216-5378/9313-2864-8424-8557?language=tr",
+            options
+          );
+        },
       },
     },
     start: (initTime) => {
@@ -300,7 +320,7 @@ PerPoolListener.listener("load", function () {
   });
 });
 
-PerPoolListener.listener("unload", (e, b) => {
+PerPoolListener.listener("unload", (b) => {
   let FMdata = new FormData();
   FMdata.append("note", JSON.stringify(b));
   const options = {
