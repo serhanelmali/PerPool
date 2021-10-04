@@ -51,11 +51,16 @@ class PerPool {
     this.pool = {
       url: null,
       userAgent: null,
+      reference: null,
       fcp: null,
       ttfb: null,
       domLoad: null,
       windowLoad: null,
-
+      visitInformation: {
+        isFirstVisit: null,
+        visitCount: null,
+        firstVisitDate: null,
+      },
       files: [],
       live: {
         mouseTracker: {
@@ -218,6 +223,41 @@ class PerPool {
     });
   }
 
+  findReference() {
+    this.pool.reference = document.referrer;
+  }
+
+  visitHandler() {
+    let visits = localStorage.getItem("visits");
+    if (visits === null) {
+      this.pool.visitInformation = {
+        isFirstVisit: true,
+        visitCount: 1,
+        firstVisitDate: new Date().toLocaleDateString(),
+      };
+
+      localStorage.setItem(
+        "visits",
+        JSON.stringify(this.pool.visitInformation)
+      );
+    }
+
+    if (visits) {
+      const lastVisitData = JSON.parse(visits);
+      this.pool.visitInformation = lastVisitData;
+      this.pool.visitInformation = {
+        isFirstVisit: false,
+        visitCount: lastVisitData.visitCount + 1,
+        firstVisitDate: lastVisitData.firstVisitDate,
+      };
+
+      localStorage.setItem(
+        "visits",
+        JSON.stringify(this.pool.visitInformation)
+      );
+    }
+  }
+
   //kanka bu sadece data-trackeri kontrol ediyor statik olmuş bunu düzelmemiz lazım
   // trackerListener() {
   //   document
@@ -269,6 +309,8 @@ class PerPool {
     this.params.start(new Date().getTime());
     this.findUrl();
     this.findUserAgent();
+    this.findReference();
+    this.visitHandler();
     this.fetchFCP();
     this.calculateTTFB();
     this.calculateDomLoad();
@@ -278,6 +320,7 @@ class PerPool {
     this.mouseMoveListener();
     this.clickListener();
     this.scrollListener();
+
     // this.trackerListener();
     this.detectNetwork();
     this.params.done(this.pool);
@@ -298,7 +341,7 @@ PerPoolListener.listener("load", function () {
         // tracker: (Tracker) => console.log("Tracker : ", Tracker),
         mouseClick: (Click) => console.log("Clicked : ", Click),
         mouseScroll: (Scroll) => {
-          console.log(PerPoolListener);
+          console.log(PerPoolListener.pool.live);
           let FMdata = new FormData();
           FMdata.append("note", JSON.stringify(Scroll));
           const options = {
