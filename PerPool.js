@@ -35,7 +35,46 @@ function stripTagClear(code) {
 }
 
 class PerPool {
-  constructor(params = {}) {
+  constructor() {
+    this.params = {
+      live: {
+        tracker: () => {},
+        click: () => {},
+        scroll: () => {},
+      },
+      start: () => {},
+      done: () => {},
+    };
+
+    this.pool = {
+      url: null,
+      userAgent: null,
+      fcp: null,
+      ttfb: null,
+      domLoad: null,
+      windowLoad: null,
+
+      files: [],
+      live: {
+        tracker: [],
+        click: [],
+        scroll: [],
+      },
+      session: {
+        startTime: null,
+        endTime: null,
+      },
+      network: {
+        ip: {
+          ipv4: null,
+          public: null,
+          ipAdress: null,
+        },
+      },
+    };
+  }
+
+  start(params) {
     this.params = {
       live: {
         tracker: () => {},
@@ -46,25 +85,7 @@ class PerPool {
       done: () => {},
       ...params,
     };
-
-    this.pool = {
-      url: null,
-      userAgent: null,
-      fcp: null,
-      ttfb: null,
-      domLoad: null,
-      windowLoad: null,
-      startTime: null,
-      files: [],
-      network: {
-        ip: {
-          ipv4: null,
-          public: null,
-          ipAdress: null,
-        },
-      },
-    };
-    this.init();
+    this.run();
   }
 
   convertMicroToSeconds(ms) {
@@ -108,7 +129,10 @@ class PerPool {
   }
 
   fetchStartTime() {
-    this.pool.startTime = new Date(window.performance.timing.navigationStart);
+    this.pool.session.startTime = new Date();
+  }
+  fetchFinishTime() {
+    this.pool.session.endTime = new Date();
   }
 
   fetchFileDetails() {
@@ -132,7 +156,22 @@ class PerPool {
           stripTagClear(event.target),
           document.createElement("canvas")
         )
-        .then((result) =>
+        .then((result) => {
+          this.pool.live.click.push({
+            type: event.target.nodeName,
+            image: {
+              source: btoa(unescape(encodeURIComponent(result.svg))),
+              url: `data:image/svg+xml;base64,${btoa(
+                unescape(encodeURIComponent(result.svg))
+              )}`,
+              type: "base64",
+            },
+            mouse: {
+              x: event.pageX,
+              y: event.pageY,
+            },
+            timeStamp: event.timeStamp,
+          });
           this.params.live.click({
             type: event.target.nodeName,
             mouse: {
@@ -140,21 +179,28 @@ class PerPool {
               y: event.pageY,
             },
             timeStamp: event.timeStamp,
-          })
-        )
+          });
+        })
     );
   }
 
   scrollListener() {
-    document.addEventListener("scroll", (event) =>
+    document.addEventListener("scroll", (event) => {
+      this.pool.live.scroll.push({
+        position: {
+          x: window.scrollX,
+          y: window.scrollY,
+        },
+        timeStamp: event.timeStamp,
+      });
       this.params.live.scroll({
         position: {
           x: window.scrollX,
           y: window.scrollY,
         },
         timeStamp: event.timeStamp,
-      })
-    );
+      });
+    });
   }
 
   trackerListener() {
@@ -162,6 +208,14 @@ class PerPool {
       .querySelector("[data-tracker]")
       .addEventListener("click", (event) => {
         delete event.target.dataset.tracker;
+        this.pool.live.tracker.push({
+          data: event.target.dataset,
+          timeStamp: event.timeStamp,
+        });
+        this.pool.live.tracker.push({
+          data: event.target.dataset,
+          timeStamp: event.timeStamp,
+        });
         this.params.live.tracker({
           data: event.target.dataset,
           timeStamp: event.timeStamp,
@@ -172,7 +226,6 @@ class PerPool {
   detectNetwork() {
     DetectRTC.DetectLocalIPAddress((ipAddress, isPublic, isIpv4) => {
       if (!ipAddress) return;
-
       this.pool.network = {
         ip: {
           ipv4: isIpv4,
@@ -183,7 +236,20 @@ class PerPool {
     });
   }
 
-  init() {
+  listener(method, callbackPer) {
+    window.addEventListener(
+      method,
+      (e) => {
+        if (method === "unload") {
+          this.fetchFinishTime();
+        }
+        callbackPer(e, this.pool);
+      },
+      false
+    );
+  }
+
+  run() {
     this.params.start(new Date().getTime());
     this.findUrl();
     this.findUserAgent();
@@ -198,17 +264,32 @@ class PerPool {
     this.trackerListener();
     this.detectNetwork();
     this.params.done(this.pool);
+
+    return this.pool;
   }
 }
 
-window.addEventListener("load", () => {
-  new PerPool({
+let PerPoolListener = new PerPool();
+
+PerPoolListener.listener("load", function () {
+  PerPoolListener.start({
     monitor: true,
     tracker: true,
     live: {
       tracker: (Tracker) => console.log("Tracker : ", Tracker),
       click: (Click) => console.log("Clicked : ", Click),
-      scroll: (Scroll) => console.log("Scroll : ", Scroll),
+      scroll: (Scroll) => {
+        let FMdata = new FormData();
+        FMdata.append("note", JSON.stringify(Scroll));
+        const options = {
+          method: "POST",
+          body: FMdata,
+        };
+        fetch(
+          "https://vobo.cloud/api/v1/insert/multiple/8538-39039-7253-40668/527-9237-2216-5378/9313-2864-8424-8557?language=tr",
+          options
+        );
+      },
     },
     start: (initTime) => {
       console.log("Start : ", initTime);
@@ -217,4 +298,17 @@ window.addEventListener("load", () => {
       console.log("Sonuç : ", AnalysisResult);
     },
   });
+});
+
+PerPoolListener.listener("unload", (e, b) => {
+  let FMdata = new FormData();
+  FMdata.append("note", JSON.stringify(b));
+  const options = {
+    method: "POST",
+    body: FMdata,
+  };
+  fetch(
+    "https://vobo.cloud/api/v1/insert/multiple/8538-39039-7253-40668/527-9237-2216-5378/9313-2864-8424-8557?language=tr",
+    options
+  );
 });
