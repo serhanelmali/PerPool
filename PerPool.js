@@ -43,6 +43,7 @@ class PerPool {
     this.pool = {
       url: null,
       userAgent: null,
+      reference: null,
       fcp: null,
       ttfb: null,
       domLoad: null,
@@ -63,6 +64,10 @@ class PerPool {
 
   findUserAgent() {
     this.pool.userAgent = navigator.userAgent;
+  }
+
+  findReference() {
+    this.pool.reference = document.referrer;
   }
 
   fetchFCP() {
@@ -162,6 +167,7 @@ class PerPool {
     this.params.start(new Date().getTime());
     this.findUrl();
     this.findUserAgent();
+    this.findReference();
     this.fetchFCP();
     this.calculateTTFB();
     this.calculateDomLoad();
