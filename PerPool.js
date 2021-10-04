@@ -218,6 +218,7 @@ class PerPool {
     });
   }
 
+  //kanka bu sadece data-trackeri kontrol ediyor statik olmuş bunu düzelmemiz lazım
   // trackerListener() {
   //   document
   //     .querySelector("[data-tracker]")
