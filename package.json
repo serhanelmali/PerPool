@@ -1,0 +1,32 @@
+{
+  "name": "perpool",
+  "version": "1.0.0",
+  "description": "PerPool is an analytic tool that is based on freedom that provides analytical data to developers.",
+  "main": "PerPool.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/serhanelmali/PerPool.git"
+  },
+  "keywords": [
+    "analytic",
+    "data",
+    "measurement",
+    "data",
+    "science",
+    "data",
+    "mapping",
+    "data",
+    "tracking",
+    "web",
+    "vitals"
+  ],
+  "author": "Serhan ELMALI / Cengiz AKCAN <serhanelmali@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/serhanelmali/PerPool/issues"
+  },
+  "homepage": "https://github.com/serhanelmali/PerPool#readme"
+}
