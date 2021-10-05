@@ -38,10 +38,11 @@ class PerPool {
   constructor() {
     this.params = {
       live: {
+        tracker: () => {},
         mouse: {
-          movement: null,
-          scroll: null,
-          click: null,
+          movement: () => {},
+          scroll: () => {},
+          click: () => {},
         },
       },
       start: () => {},
@@ -68,6 +69,7 @@ class PerPool {
       },
       files: [],
       live: {
+        tracker: [],
         mouse: {
           movement: [],
           scroll: [],
@@ -200,6 +202,7 @@ class PerPool {
   fetchStartTime() {
     this.pool.session.startTime = new Date();
   }
+
   fetchFinishTime() {
     this.pool.session.endTime = new Date();
   }
@@ -279,6 +282,26 @@ class PerPool {
         timeStamp: event.timeStamp,
       });
     });
+  }
+
+  trackerListener() {
+    document
+      .querySelector("[data-tracker]")
+      .addEventListener("click", (event) => {
+        delete event.target.dataset.tracker;
+        this.pool.live.tracker.push({
+          data: event.target.dataset,
+          timeStamp: event.timeStamp,
+        });
+        this.pool.live.tracker.push({
+          data: event.target.dataset,
+          timeStamp: event.timeStamp,
+        });
+        this.params.live.tracker({
+          data: event.target.dataset,
+          timeStamp: event.timeStamp,
+        });
+      });
   }
 
   findReference() {
