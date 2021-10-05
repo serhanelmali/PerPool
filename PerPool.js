@@ -52,17 +52,10 @@ class PerPool {
       url: null,
       userAgent: null,
       reference: null,
-      fid: {
-        delay: null,
-        entry: {
-          cancelable: null,
-          duration: null,
-          entryType: null,
-          name: null,
-          processingEnd: null,
-          processingStart: null,
-          startTime: null,
-        },
+      observer: {
+        fid: "not calculated yet",
+        lcp: "browser doesn't support",
+        cls: "browser doesn't support",
       },
       fcp: null,
       ttfb: null,
@@ -127,20 +120,53 @@ class PerPool {
     new PerformanceObserver((entryList) => {
       for (const entry of entryList.getEntries()) {
         const delay = entry.processingStart - entry.startTime;
-        this.pool.fid = {
-          delay: delay,
-          entry: {
-            cancelable: entry.cancelable,
-            duration: entry.duration,
-            entryType: entry.entryType,
-            name: entry.name,
-            processingEnd: entry.processingEnd,
-            processingStart: entry.processingStart,
-            startTime: entry.startTime,
-          },
-        };
+        this.pool.observer.fid = delay;
       }
     }).observe({ type: "first-input", buffered: true });
+  }
+
+  fetchLCP() {
+    new PerformanceObserver((entryList) => {
+      for (const entry of entryList.getEntries()) {
+        this.pool.observer.lcp = entry.startTime;
+      }
+    }).observe({ type: "largest-contentful-paint", buffered: true });
+  }
+
+  fetchCLS() {
+    let clsValue = 0;
+    let clsEntries = [];
+
+    let sessionValue = 0;
+    let sessionEntries = [];
+
+    new PerformanceObserver((entryList) => {
+      for (const entry of entryList.getEntries()) {
+        if (!entry.hadRecentInput) {
+          const firstSessionEntry = sessionEntries[0];
+          const lastSessionEntry = sessionEntries[sessionEntries.length - 1];
+
+          if (
+            sessionValue &&
+            entry.startTime - lastSessionEntry.startTime < 1000 &&
+            entry.startTime - firstSessionEntry.startTime < 5000
+          ) {
+            sessionValue += entry.value;
+            sessionEntries.push(entry);
+          } else {
+            sessionValue = entry.value;
+            sessionEntries = [entry];
+          }
+
+          if (sessionValue > clsValue) {
+            clsValue = sessionValue;
+            clsEntries = sessionEntries;
+
+            this.pool.observer.cls = clsValue;
+          }
+        }
+      }
+    }).observe({ type: "layout-shift", buffered: true });
   }
 
   fetchFCP() {
@@ -290,27 +316,6 @@ class PerPool {
     }
   }
 
-  //kanka bu sadece data-trackeri kontrol ediyor statik olmuş bunu düzelmemiz lazım
-  // trackerListener() {
-  //   document
-  //     .querySelector("[data-tracker]")
-  //     .addEventListener("click", (event) => {
-  //       delete event.target.dataset.tracker;
-  //       this.pool.live.tracker.push({
-  //         data: event.target.dataset,
-  //         timeStamp: event.timeStamp,
-  //       });
-  //       this.pool.live.tracker.push({
-  //         data: event.target.dataset,
-  //         timeStamp: event.timeStamp,
-  //       });
-  //       this.params.live.tracker({
-  //         data: event.target.dataset,
-  //         timeStamp: event.timeStamp,
-  //       });
-  //     });
-  // }
-
   detectNetwork() {
     DetectRTC.DetectLocalIPAddress((ipAddress, isPublic, isIpv4) => {
       if (!ipAddress) return;
@@ -344,6 +349,8 @@ class PerPool {
     this.findReference();
     this.visitHandler();
     this.fetchFID();
+    this.fetchLCP();
+    this.fetchCLS();
     this.fetchFCP();
     this.calculateTTFB();
     this.calculateDomLoad();
@@ -353,8 +360,6 @@ class PerPool {
     this.mouseMoveListener();
     this.clickListener();
     this.scrollListener();
-
-    // this.trackerListener();
     this.detectNetwork();
     this.params.done(this.pool);
 

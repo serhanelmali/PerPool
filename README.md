@@ -7,3 +7,5 @@ PerPool is an analytic tool that is based on freedom that provides analytical da
 > checked todos are done.
 
 - [ ] **Calculate total hangout time of user**
+
+// browser support lcp vs ?
