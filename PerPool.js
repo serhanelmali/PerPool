@@ -38,10 +38,10 @@ class PerPool {
   constructor() {
     this.params = {
       live: {
-        mouseTracker: {
-          mouseMovement: null,
-          mouseScroll: null,
-          mouseClick: null,
+        mouse: {
+          movement: null,
+          scroll: null,
+          click: null,
         },
       },
       start: () => {},
@@ -63,10 +63,10 @@ class PerPool {
       },
       files: [],
       live: {
-        mouseTracker: {
-          mouseMovement: [],
-          mouseScroll: [],
-          mouseClick: [],
+        mouse: {
+          movement: [],
+          scroll: [],
+          click: [],
         },
       },
       session: {
@@ -86,10 +86,10 @@ class PerPool {
   start(params) {
     this.params = {
       live: {
-        mouseTracker: {
-          mouseMovement: () => {},
-          mouseScroll: () => {},
-          mouseClick: () => {},
+        mouse: {
+          movement: () => {},
+          scroll: () => {},
+          click: () => {},
         },
       },
       start: () => {},
@@ -162,7 +162,7 @@ class PerPool {
 
   mouseMoveListener() {
     document.addEventListener("mousemove", (event) => {
-      this.pool.live.mouseTracker.mouseMovement.push({
+      this.pool.live.mouse.movement.push({
         mouseX: event.pageX,
         mouseY: event.pageY,
       });
@@ -177,7 +177,7 @@ class PerPool {
           document.createElement("canvas")
         )
         .then((result) => {
-          this.pool.live.mouseTracker.mouseClick.push({
+          this.pool.live.mouse.click.push({
             type: event.target.nodeName,
             image: {
               source: btoa(unescape(encodeURIComponent(result.svg))),
@@ -192,7 +192,7 @@ class PerPool {
             },
             timeStamp: event.timeStamp,
           });
-          this.params.live.mouseTracker.mouseClick({
+          this.params.live.mouse.click({
             type: event.target.nodeName,
             mouse: {
               x: event.pageX,
@@ -206,14 +206,14 @@ class PerPool {
 
   scrollListener() {
     document.addEventListener("scroll", (event) => {
-      this.pool.live.mouseTracker.mouseScroll.push({
+      this.pool.live.mouse.scroll.push({
         position: {
           x: window.scrollX,
           y: window.scrollY,
         },
         timeStamp: event.timeStamp,
       });
-      this.params.live.mouseTracker.mouseScroll({
+      this.params.live.mouse.scroll({
         position: {
           x: window.scrollX,
           y: window.scrollY,
@@ -336,11 +336,11 @@ PerPoolListener.listener("load", function () {
     monitor: true,
     tracker: true,
     live: {
-      mouseTracker: {
-        mouseMovement: (MouseMove) => console.log(MouseMove),
+      mouse: {
+        movement: (MouseMove) => console.log(MouseMove),
         // tracker: (Tracker) => console.log("Tracker : ", Tracker),
-        mouseClick: (Click) => console.log("Clicked : ", Click),
-        mouseScroll: (Scroll) => {
+        click: (Click) => console.log("Clicked : ", Click),
+        scroll: (Scroll) => {
           console.log(PerPoolListener.pool.live);
           let FMdata = new FormData();
           FMdata.append("note", JSON.stringify(Scroll));
