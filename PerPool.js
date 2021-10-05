@@ -52,6 +52,18 @@ class PerPool {
       url: null,
       userAgent: null,
       reference: null,
+      fid: {
+        delay: null,
+        entry: {
+          cancelable: null,
+          duration: null,
+          entryType: null,
+          name: null,
+          processingEnd: null,
+          processingStart: null,
+          startTime: null,
+        },
+      },
       fcp: null,
       ttfb: null,
       domLoad: null,
@@ -109,6 +121,26 @@ class PerPool {
 
   findUserAgent() {
     this.pool.userAgent = navigator.userAgent;
+  }
+
+  fetchFID() {
+    new PerformanceObserver((entryList) => {
+      for (const entry of entryList.getEntries()) {
+        const delay = entry.processingStart - entry.startTime;
+        this.pool.fid = {
+          delay: delay,
+          entry: {
+            cancelable: entry.cancelable,
+            duration: entry.duration,
+            entryType: entry.entryType,
+            name: entry.name,
+            processingEnd: entry.processingEnd,
+            processingStart: entry.processingStart,
+            startTime: entry.startTime,
+          },
+        };
+      }
+    }).observe({ type: "first-input", buffered: true });
   }
 
   fetchFCP() {
@@ -311,6 +343,7 @@ class PerPool {
     this.findUserAgent();
     this.findReference();
     this.visitHandler();
+    this.fetchFID();
     this.fetchFCP();
     this.calculateTTFB();
     this.calculateDomLoad();
@@ -341,7 +374,7 @@ PerPoolListener.listener("load", function () {
         // tracker: (Tracker) => console.log("Tracker : ", Tracker),
         click: (Click) => console.log("Clicked : ", Click),
         scroll: (Scroll) => {
-          console.log(PerPoolListener.pool.live);
+          console.log(PerPoolListener.pool);
           let FMdata = new FormData();
           FMdata.append("note", JSON.stringify(Scroll));
           const options = {
